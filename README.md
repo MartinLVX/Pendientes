@@ -7,7 +7,7 @@ Es una app web instalable (PWA): el mismo código funciona en el celular y en el
 ## Qué hace
 
 - Crear cuenta y entrar con correo y contraseña. Cada persona ve solo sus pendientes.
-- Agregar, marcar como hecho, desmarcar y borrar pendientes. Los hechos se agrupan abajo y se pueden borrar todos juntos.
+- Agregar, marcar como hecho, desmarcar y borrar pendientes. En la compu, pendientes y hechos se ven en dos columnas lado a lado; en el celular, los hechos van debajo. Los hechos se pueden borrar todos juntos, con confirmación previa.
 - Clasificar cada pendiente por urgencia (baja, media o alta). La lista muestra primero los más urgentes, se puede filtrar por urgencia y tocando la etiqueta de un pendiente se cambia su urgencia.
 - Lo que cambias en un dispositivo aparece en los demás al momento.
 - Se instala en la pantalla de inicio del celular y abre aunque no haya internet (para ver o cambiar pendientes sí necesita conexión).
