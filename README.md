@@ -18,7 +18,7 @@ Es una app web instalable (PWA): el mismo código funciona en el celular y en el
 1. En GitHub, abre **Settings → Pages** de este repositorio.
 2. En **Build and deployment → Source**, elige **GitHub Actions**.
 3. Cada vez que haya cambios en `main`, la app se publica sola en
-   **https://martinlvx.github.io/pendientes/**
+   **https://martinlvx.github.io/Pendientes/**
    (si la primera publicación falló porque Pages no estaba activo, entra a **Actions → Publicar en GitHub Pages → Run workflow**).
 
 ### 2. Decirle a Supabase dónde vive la app
@@ -27,8 +27,8 @@ Esto hace que el enlace del correo de confirmación te lleve de vuelta a la app.
 
 1. Entra a tu proyecto **pendientes** en [supabase.com](https://supabase.com/dashboard).
 2. Ve a **Authentication → URL Configuration**.
-3. En **Site URL** pon `https://martinlvx.github.io/pendientes/`.
-4. En **Redirect URLs** agrega `https://martinlvx.github.io/pendientes/` y guarda.
+3. En **Site URL** pon `https://martinlvx.github.io/Pendientes/`.
+4. En **Redirect URLs** agrega `https://martinlvx.github.io/Pendientes/` y guarda.
 
 ## Instalar en el celular
 
@@ -53,3 +53,5 @@ No hay paso de compilación: son archivos estáticos.
 Para probarla en tu compu: `python3 -m http.server 8000` dentro de la carpeta y abre http://localhost:8000. Para que el correo de confirmación vuelva a esa dirección, agrégala también en **Redirect URLs** de Supabase.
 
 Al publicar cambios, sube el número de `VERSION` en `sw.js` para que los celulares que ya la tienen instalada descarguen lo nuevo.
+
+> La dirección distingue mayúsculas: es `/Pendientes/` con P mayúscula, igual que el nombre del repositorio.
