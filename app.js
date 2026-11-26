@@ -27,11 +27,32 @@
     $("min-hechos").setAttribute("aria-expanded", String(!hechosMin));
     $("min-hechos-texto").textContent = hechosMin ? "Mostrar" : "Minimizar";
   }
-  $("min-hechos").addEventListener("click", () => {
+  function alternarHechos() {
     hechosMin = !hechosMin;
     try { localStorage.setItem("hechosMin", hechosMin ? "1" : "0"); } catch (_) {}
     aplicarHechosMin();
+  }
+  $("min-hechos").addEventListener("click", alternarHechos);
+  $("tab-hechos").addEventListener("click", alternarHechos);
+
+  // Tema claro / oscuro: sigue al sistema hasta que eliges uno; la elección se recuerda.
+  const raiz = document.documentElement;
+  const sistemaOscuro = window.matchMedia("(prefers-color-scheme: dark)");
+  function temaActual() { return raiz.dataset.theme || (sistemaOscuro.matches ? "dark" : "light"); }
+  function pintarTema() {
+    const t = temaActual();
+    raiz.dataset.temaActual = t;
+    $("tema").setAttribute("aria-label", t === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro");
+    document.querySelector('meta[name="theme-color"]').setAttribute("content", t === "dark" ? "#17110d" : "#f76707");
+  }
+  $("tema").addEventListener("click", () => {
+    const nuevo = temaActual() === "dark" ? "light" : "dark";
+    raiz.dataset.theme = nuevo;
+    try { localStorage.setItem("tema", nuevo); } catch (_) {}
+    pintarTema();
   });
+  sistemaOscuro.addEventListener("change", pintarTema);
+  pintarTema();
   aplicarHechosMin();
   let canal = null;
   let modoRegistro = false;
@@ -368,6 +389,7 @@
       ? "No hay pendientes de urgencia " + NOMBRE_URG[filtro].toLowerCase() + "."
       : "No tienes pendientes. ¡Bien hecho!";
     $("hechos-n").textContent = hechosVisibles.length;
+    $("tab-hechos-n").textContent = hechosVisibles.length;
     $("n-0").textContent = abiertos.length;
     [1, 2, 3].forEach((u) => ($("n-" + u).textContent = abiertos.filter((x) => (x.urgencia || 2) === u).length));
     const altas = abiertos.filter((x) => x.urgencia === 3).length;
