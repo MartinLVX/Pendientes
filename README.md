@@ -10,6 +10,7 @@ Es una app web instalable (PWA): el mismo código funciona en el celular y en el
 - Agregar, marcar como hecho, desmarcar y borrar pendientes. En la compu, pendientes y hechos se ven en dos columnas lado a lado; en el celular, los hechos van debajo. Los hechos se pueden borrar todos juntos, con confirmación previa.
 - Agregar una descripción opcional a cada pendiente; se ve tocando "Ver más".
 - Minimizar la columna de Hechos: en la compu queda como una pestaña a la derecha y Pendientes ocupa todo el ancho (el dispositivo lo recuerda).
+- Recordatorios: la campana de cada pendiente permite elegir fecha y hora para recibir una notificación, aunque la app esté cerrada. En iPhone hace falta tener la app instalada en la pantalla de inicio (iOS 16.4 o posterior).
 - Cambiar entre tema claro y oscuro con el botón de arriba (por defecto sigue al del sistema).
 - Clasificar cada pendiente por urgencia (baja, media o alta). La lista muestra primero los más urgentes, se puede filtrar por urgencia y tocando la etiqueta de un pendiente se cambia su urgencia.
 - Lo que cambias en un dispositivo aparece en los demás al momento.
@@ -50,6 +51,7 @@ La primera vez crea tu cuenta, confirma el correo y entra con la misma cuenta en
 | `config.js` | Dirección y clave pública de Supabase (es seguro que sea pública) |
 | `manifest.webmanifest`, `sw.js`, `icons/` | Lo que la hace instalable y abrir sin conexión |
 | `vendor/supabase.js` | Librería oficial de Supabase (v2.118.0, licencia MIT) |
+| `supabase/functions/enviar-recordatorios/` | Función que envía las notificaciones; `pg_cron` la llama cada minuto. Las claves VAPID privadas viven en el Vault de Supabase |
 | `supabase/migrations/` | La tabla `pendientes` con reglas para que cada usuario vea solo lo suyo |
 
 No hay paso de compilación: son archivos estáticos.

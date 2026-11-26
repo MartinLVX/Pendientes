@@ -384,3 +384,25 @@ button:disabled { opacity: 0.5; cursor: default; }
   }
   .hechos-min #lista .item { margin-bottom: 0; }
 }
+
+/* Recordatorios */
+.campana {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: none; border: 0; padding: 2px 4px; border-radius: 8px;
+  color: var(--muted); font-size: 0.78rem; font-weight: 600;
+}
+.campana svg { width: 15px; height: 15px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.campana:hover { color: var(--accent); background: var(--accent-soft); }
+.campana.activa { color: var(--accent); }
+.campana.activa svg { fill: currentColor; }
+.campana span:empty { display: none; }
+.item .meta { flex-wrap: wrap; }
+.rec-pendiente { font-weight: 600; color: var(--text) !important; margin: 0 0 14px !important; overflow-wrap: anywhere; }
+.rec-campo { margin-bottom: 8px; }
+.rec-campo input {
+  font: inherit; color: var(--text); background: var(--bg);
+  border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 12px; width: 100%;
+}
+.rec-campo input:focus { outline: none; border-color: var(--accent); }
+.dialogo .msg { margin: 0 0 12px; }
+.rec-quitar { margin-right: auto; }
