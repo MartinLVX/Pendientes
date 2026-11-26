@@ -139,8 +139,9 @@ button:disabled { opacity: 0.5; cursor: default; }
 
 /* Nuevo pendiente */
 .nuevo { display: grid; gap: 12px; padding: 14px; margin-bottom: 18px; }
-.nuevo-fila { display: flex; gap: 8px; }
-.nuevo-fila input { flex: 1; }
+.nuevo-fila { display: flex; gap: 8px; align-items: stretch; }
+.nuevo-fila textarea { flex: 1; }
+.nuevo-fila .agregar { align-self: stretch; justify-content: center; }
 .agregar { display: inline-flex; align-items: center; gap: 6px; }
 .agregar svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; fill: none; }
 @media (max-width: 420px) { .agregar span { display: none; } .agregar { padding: 12px 14px; } }

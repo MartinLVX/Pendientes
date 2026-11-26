@@ -109,7 +109,14 @@
     }
   });
 
-  btnSalir.addEventListener("click", () => sb.auth.signOut());
+  btnSalir.addEventListener("click", async () => {
+    const ok = await confirmar({
+      titulo: "¿Cerrar sesión?",
+      texto: "Tendrás que volver a ingresar con tu correo y contraseña. Tus pendientes quedan guardados.",
+      boton: "Salir",
+    });
+    if (ok) sb.auth.signOut();
+  });
 
   function traducirError(err) {
     const m = (err && err.message) || String(err);
@@ -253,10 +260,12 @@
     if (error) { pendientes = copia; pintar(); avisar("No se pudo borrar. " + traducirError(error), true); }
   }
 
-  function confirmar(n) {
+  // Cuadro de confirmación reutilizable (borrar hechos, salir).
+  function confirmar({ titulo, texto, boton }) {
     const dlg = $("confirmar");
-    $("conf-titulo").textContent = n === 1 ? "¿Borrar 1 pendiente hecho?" : "¿Borrar " + n + " pendientes hechos?";
-    $("conf-si").textContent = n === 1 ? "Borrar 1" : "Borrar " + n;
+    $("conf-titulo").textContent = titulo;
+    $("conf-texto").textContent = texto;
+    $("conf-si").textContent = boton;
     if (typeof dlg.showModal !== "function") return Promise.resolve(window.confirm($("conf-titulo").textContent));
     return new Promise((resolve) => {
       dlg.returnValue = "";
@@ -274,7 +283,13 @@
       (x) => x.hecho && !String(x.id).startsWith("tmp-") && (!filtro || (x.urgencia || 2) === filtro)
     );
     if (!hechos.length) return;
-    if (!(await confirmar(hechos.length))) return;
+    const n = hechos.length;
+    const ok = await confirmar({
+      titulo: n === 1 ? "¿Borrar 1 pendiente hecho?" : "¿Borrar " + n + " pendientes hechos?",
+      texto: "Se eliminarán por completo y no se pueden recuperar.",
+      boton: n === 1 ? "Borrar 1" : "Borrar " + n,
+    });
+    if (!ok) return;
     const ids = new Set(hechos.map((x) => x.id));
     const copia = pendientes.slice();
     pendientes = pendientes.filter((x) => !ids.has(x.id));
