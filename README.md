@@ -56,6 +56,6 @@ No hay paso de compilación: son archivos estáticos.
 
 Para probarla en tu compu: `python3 -m http.server 8000` dentro de la carpeta y abre http://localhost:8000. Para que el correo de confirmación vuelva a esa dirección, agrégala también en **Redirect URLs** de Supabase.
 
-Al publicar cambios, sube el número de `VERSION` en `sw.js` para que los celulares que ya la tienen instalada descarguen lo nuevo.
+Al publicar cambios, sube el número de `VERSION` en `sw.js` y el `?v=` de `style.css`, `config.js` y `app.js` en `index.html`, para que los navegadores y los celulares con la app instalada descarguen lo nuevo de inmediato.
 
 > La dirección distingue mayúsculas: es `/Pendientes/` con P mayúscula, igual que el nombre del repositorio.
