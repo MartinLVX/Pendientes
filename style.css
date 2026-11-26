@@ -373,3 +373,14 @@ button:disabled { opacity: 0.5; cursor: default; }
   .minimizar svg { transform: rotate(90deg); }
 }
 @media (prefers-reduced-motion: reduce) { .columnas { transition: none; } }
+
+/* Con Hechos minimizado, los pendientes aprovechan el ancho en 2 columnas */
+@media (min-width: 760px) {
+  .hechos-min #lista {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    align-items: start;
+  }
+  .hechos-min #lista .item { margin-bottom: 0; }
+}
