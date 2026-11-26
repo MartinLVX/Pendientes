@@ -211,13 +211,33 @@
     if (error) { pendientes = copia; pintar(); avisar("No se pudo borrar. " + traducirError(error), true); }
   }
 
+  function confirmar(n) {
+    const dlg = $("confirmar");
+    $("conf-titulo").textContent = n === 1 ? "¿Borrar 1 pendiente hecho?" : "¿Borrar " + n + " pendientes hechos?";
+    $("conf-si").textContent = n === 1 ? "Borrar 1" : "Borrar " + n;
+    if (typeof dlg.showModal !== "function") return Promise.resolve(window.confirm($("conf-titulo").textContent));
+    return new Promise((resolve) => {
+      dlg.returnValue = "";
+      dlg.addEventListener("close", () => resolve(dlg.returnValue === "si"), { once: true });
+      dlg.showModal();
+    });
+  }
+
+  // Tocar fuera del cuadro lo cierra sin borrar.
+  $("confirmar").addEventListener("click", (e) => { if (e.target === e.currentTarget) e.currentTarget.close("no"); });
+
   $("borrar-hechos").addEventListener("click", async () => {
-    const hechos = pendientes.filter((x) => x.hecho);
+    // Respeta el filtro de urgencia: borra solo los hechos que se están viendo.
+    const hechos = pendientes.filter(
+      (x) => x.hecho && !String(x.id).startsWith("tmp-") && (!filtro || (x.urgencia || 2) === filtro)
+    );
     if (!hechos.length) return;
+    if (!(await confirmar(hechos.length))) return;
+    const ids = new Set(hechos.map((x) => x.id));
     const copia = pendientes.slice();
-    pendientes = pendientes.filter((x) => !x.hecho);
+    pendientes = pendientes.filter((x) => !ids.has(x.id));
     pintar();
-    const { error } = await sb.from("pendientes").delete().in("id", hechos.map((x) => x.id));
+    const { error } = await sb.from("pendientes").delete().in("id", [...ids]);
     if (error) { pendientes = copia; pintar(); avisar("No se pudieron borrar. " + traducirError(error), true); }
   });
 
@@ -288,15 +308,22 @@
   function pintar() {
     const abiertos = pendientes.filter((x) => !x.hecho).sort(ordenar);
     const hechos = pendientes.filter((x) => x.hecho).sort(ordenar);
-    const visibles = filtro ? abiertos.filter((x) => (x.urgencia || 2) === filtro) : abiertos;
+    const porFiltro = (x) => !filtro || (x.urgencia || 2) === filtro;
+    const visibles = abiertos.filter(porFiltro);
+    const hechosVisibles = hechos.filter(porFiltro);
     $("lista").replaceChildren(...visibles.map(item));
-    $("lista-hechos").replaceChildren(...hechos.map(item));
+    $("lista-hechos").replaceChildren(...hechosVisibles.map(item));
+    $("pend-n").textContent = visibles.length;
+    $("hechos-vacio").hidden = hechosVisibles.length > 0;
+    $("hechos-vacio").textContent = filtro && hechos.length
+      ? "No hay hechos de urgencia " + NOMBRE_URG[filtro].toLowerCase() + "."
+      : "Lo que marques como hecho aparecerá aquí.";
+    $("borrar-hechos").hidden = hechosVisibles.length === 0;
     $("vacio").hidden = visibles.length > 0;
     $("vacio-texto").textContent = filtro && abiertos.length
       ? "No hay pendientes de urgencia " + NOMBRE_URG[filtro].toLowerCase() + "."
       : "No tienes pendientes. ¡Bien hecho!";
-    $("hechos-wrap").hidden = hechos.length === 0;
-    $("hechos-n").textContent = hechos.length;
+    $("hechos-n").textContent = hechosVisibles.length;
     $("n-0").textContent = abiertos.length;
     [1, 2, 3].forEach((u) => ($("n-" + u).textContent = abiertos.filter((x) => (x.urgencia || 2) === u).length));
     const altas = abiertos.filter((x) => x.urgencia === 3).length;
