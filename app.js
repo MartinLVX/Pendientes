@@ -13,7 +13,9 @@
   const btnSalir = $("salir");
 
   let usuario = null;
-  let pendientes = []; // { id, texto, hecho, created_at }
+  let pendientes = []; // { id, texto, hecho, urgencia, created_at }
+  let filtro = 0; // 0 = todos, 1..3 = solo esa urgencia
+  const NOMBRE_URG = { 1: "Baja", 2: "Media", 3: "Alta" };
   let canal = null;
   let modoRegistro = false;
 
@@ -113,7 +115,7 @@
   async function cargar() {
     const { data, error } = await sb
       .from("pendientes")
-      .select("id, texto, hecho, created_at")
+      .select("id, texto, hecho, urgencia, created_at")
       .order("created_at", { ascending: false });
     if (error) return avisar("No se pudieron cargar los pendientes. " + traducirError(error), true);
     pendientes = data;
@@ -158,10 +160,11 @@
     const texto = input.value.trim();
     if (!texto) return;
     input.value = "";
-    const temporal = { id: "tmp-" + Date.now(), texto, hecho: false, created_at: new Date().toISOString() };
+    const urgencia = Number(document.querySelector('input[name="urgencia"]:checked').value);
+    const temporal = { id: "tmp-" + Date.now(), texto, hecho: false, urgencia, created_at: new Date().toISOString() };
     pendientes.unshift(temporal);
     pintar();
-    const { data, error } = await sb.from("pendientes").insert({ texto }).select().single();
+    const { data, error } = await sb.from("pendientes").insert({ texto, urgencia }).select().single();
     const i = pendientes.findIndex((x) => x.id === temporal.id);
     if (error) {
       if (i >= 0) pendientes.splice(i, 1);
@@ -183,6 +186,22 @@
     const { error } = await sb.from("pendientes").update({ hecho: p.hecho }).eq("id", p.id);
     if (error) { p.hecho = antes; pintar(); avisar("No se pudo actualizar. " + traducirError(error), true); }
   }
+
+  async function cambiarUrgencia(p) {
+    const antes = p.urgencia;
+    p.urgencia = antes >= 3 ? 1 : antes + 1;
+    pintar();
+    const { error } = await sb.from("pendientes").update({ urgencia: p.urgencia }).eq("id", p.id);
+    if (error) { p.urgencia = antes; pintar(); avisar("No se pudo cambiar la urgencia. " + traducirError(error), true); }
+  }
+
+  document.querySelectorAll(".filtro").forEach((b) =>
+    b.addEventListener("click", () => {
+      filtro = Number(b.dataset.filtro);
+      document.querySelectorAll(".filtro").forEach((x) => x.classList.toggle("activo", x === b));
+      pintar();
+    })
+  );
 
   async function borrar(p) {
     const copia = pendientes.slice();
@@ -209,36 +228,89 @@
     el.className = esError ? "msg error" : "msg";
   }
 
+  function cuando(fecha) {
+    const d = new Date(fecha);
+    const hoy = new Date();
+    const ayer = new Date(); ayer.setDate(hoy.getDate() - 1);
+    const mismoDia = (x, y) => x.toDateString() === y.toDateString();
+    if (mismoDia(d, hoy)) return "Hoy " + d.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" });
+    if (mismoDia(d, ayer)) return "Ayer";
+    return d.toLocaleDateString("es", { day: "numeric", month: "short" });
+  }
+
   function item(p) {
+    const u = p.urgencia || 2;
+    const temporal = String(p.id).startsWith("tmp-");
     const li = document.createElement("li");
-    li.className = "item" + (p.hecho ? " hecho" : "");
+    li.className = "item u" + u + (p.hecho ? " hecho" : "");
     const check = document.createElement("input");
     check.type = "checkbox";
+    check.className = "check";
     check.checked = p.hecho;
     check.setAttribute("aria-label", "Marcar como hecho");
-    check.disabled = String(p.id).startsWith("tmp-");
+    check.disabled = temporal;
     check.addEventListener("change", () => alternar(p));
+
+    const cuerpo = document.createElement("div");
+    cuerpo.className = "cuerpo";
     const span = document.createElement("span");
     span.className = "texto";
     span.textContent = p.texto;
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    const badge = document.createElement("button");
+    badge.className = "badge";
+    badge.textContent = NOMBRE_URG[u];
+    badge.title = "Toca para cambiar la urgencia";
+    badge.setAttribute("aria-label", "Urgencia " + NOMBRE_URG[u] + ". Toca para cambiarla");
+    badge.disabled = temporal;
+    badge.addEventListener("click", () => cambiarUrgencia(p));
+    const fecha = document.createElement("span");
+    fecha.textContent = cuando(p.created_at);
+    meta.append(badge, fecha);
+    cuerpo.append(span, meta);
+
     const del = document.createElement("button");
     del.className = "borrar";
     del.setAttribute("aria-label", "Borrar");
-    del.textContent = "×";
-    del.disabled = check.disabled;
+    del.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+    del.disabled = temporal;
     del.addEventListener("click", () => borrar(p));
-    li.append(check, span, del);
+    li.append(check, cuerpo, del);
     return li;
   }
 
+  // Más urgentes primero; dentro de la misma urgencia, los más nuevos primero.
+  function ordenar(a, b) {
+    return (b.urgencia || 2) - (a.urgencia || 2) || String(b.created_at).localeCompare(String(a.created_at));
+  }
+
   function pintar() {
-    const abiertos = pendientes.filter((x) => !x.hecho);
-    const hechos = pendientes.filter((x) => x.hecho);
-    $("lista").replaceChildren(...abiertos.map(item));
+    const abiertos = pendientes.filter((x) => !x.hecho).sort(ordenar);
+    const hechos = pendientes.filter((x) => x.hecho).sort(ordenar);
+    const visibles = filtro ? abiertos.filter((x) => (x.urgencia || 2) === filtro) : abiertos;
+    $("lista").replaceChildren(...visibles.map(item));
     $("lista-hechos").replaceChildren(...hechos.map(item));
-    $("vacio").hidden = abiertos.length > 0;
+    $("vacio").hidden = visibles.length > 0;
+    $("vacio-texto").textContent = filtro && abiertos.length
+      ? "No hay pendientes de urgencia " + NOMBRE_URG[filtro].toLowerCase() + "."
+      : "No tienes pendientes. ¡Bien hecho!";
     $("hechos-wrap").hidden = hechos.length === 0;
     $("hechos-n").textContent = hechos.length;
+    $("n-0").textContent = abiertos.length;
+    [1, 2, 3].forEach((u) => ($("n-" + u).textContent = abiertos.filter((x) => (x.urgencia || 2) === u).length));
+    const altas = abiertos.filter((x) => x.urgencia === 3).length;
+    const resumen = $("resumen");
+    if (!usuario) resumen.textContent = "";
+    else if (!abiertos.length) resumen.textContent = "Todo al día";
+    else {
+      resumen.textContent = abiertos.length + (abiertos.length === 1 ? " pendiente" : " pendientes");
+      if (altas) {
+        const b = document.createElement("b");
+        b.textContent = " · " + altas + (altas === 1 ? " urgente" : " urgentes");
+        resumen.append(b);
+      }
+    }
   }
 
   // ---------- Instalable / offline ----------
