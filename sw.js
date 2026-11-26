@@ -1,6 +1,6 @@
 // Guarda la app en el dispositivo para que abra rápido y sin conexión.
 // Cambia VERSION cuando publiques cambios para que los celulares los reciban.
-const VERSION = "pendientes-v8";
+const VERSION = "pendientes-v9";
 const ARCHIVOS = [
   "./",
   "index.html",
@@ -45,5 +45,31 @@ self.addEventListener("fetch", (e) => {
         return r;
       })
       .catch(() => caches.match(e.request, { ignoreSearch: true }).then((r) => r || caches.match("index.html")))
+  );
+});
+
+// Notificaciones de recordatorios (llegan aunque la app esté cerrada).
+self.addEventListener("push", (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (_) { d = { title: "Pendientes", body: e.data && e.data.text() }; }
+  e.waitUntil(
+    self.registration.showNotification(d.title || "Pendientes", {
+      body: d.body || "",
+      tag: d.tag,
+      icon: "icons/icon-192.png",
+      badge: "icons/icon-192.png",
+      data: { url: d.url || "./" },
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const destino = new URL((e.notification.data && e.notification.data.url) || "./", self.registration.scope).href;
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((ventanas) => {
+      for (const v of ventanas) if (v.url.startsWith(self.registration.scope) && "focus" in v) return v.focus();
+      return self.clients.openWindow(destino);
+    })
   );
 });

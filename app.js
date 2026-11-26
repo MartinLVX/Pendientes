@@ -145,6 +145,7 @@
       btnSalir.hidden = false;
       cargar();
       suscribir();
+      sincronizarNotificaciones();
     } else {
       vistaLista.hidden = true;
       vistaLogin.hidden = false;
@@ -160,7 +161,7 @@
   async function cargar() {
     const { data, error } = await sb
       .from("pendientes")
-      .select("id, texto, descripcion, hecho, urgencia, created_at")
+      .select("id, texto, descripcion, hecho, urgencia, recordar_en, recordado, created_at")
       .order("created_at", { ascending: false });
     if (error) return avisar("No se pudieron cargar los pendientes. " + traducirError(error), true);
     pendientes = data;
@@ -345,6 +346,21 @@
     const fecha = document.createElement("span");
     fecha.textContent = cuando(p.created_at);
     meta.append(badge, fecha);
+    if (!p.hecho || p.recordar_en) {
+      const activo = !!p.recordar_en && !p.recordado;
+      const bell = document.createElement("button");
+      bell.className = "campana" + (activo ? " activa" : "");
+      bell.disabled = temporal;
+      bell.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
+      const etiqueta = document.createElement("span");
+      if (activo) etiqueta.textContent = cuandoRecordar(p.recordar_en);
+      else if (p.recordar_en && p.recordado) etiqueta.textContent = "Recordado";
+      bell.append(etiqueta);
+      bell.title = activo ? "Recordatorio: " + new Date(p.recordar_en).toLocaleString("es") : "Agregar recordatorio";
+      bell.setAttribute("aria-label", activo ? "Recordatorio el " + new Date(p.recordar_en).toLocaleString("es") + ". Toca para cambiarlo" : "Agregar recordatorio");
+      bell.addEventListener("click", () => abrirRecordatorio(p));
+      meta.append(bell);
+    }
     cuerpo.append(span, meta);
 
     if (p.descripcion) {
@@ -419,6 +435,106 @@
         resumen.append(b);
       }
     }
+  }
+
+  // ---------- Recordatorios (notificaciones) ----------
+  function cuandoRecordar(fecha) {
+    const d = new Date(fecha);
+    const hora = d.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" });
+    const hoy = new Date();
+    const manana = new Date(); manana.setDate(hoy.getDate() + 1);
+    if (d.toDateString() === hoy.toDateString()) return "Hoy " + hora;
+    if (d.toDateString() === manana.toDateString()) return "Mañana " + hora;
+    return d.toLocaleDateString("es", { day: "numeric", month: "short" }) + " " + hora;
+  }
+
+  function aLocalInput(d) {
+    const z = (n) => String(n).padStart(2, "0");
+    return d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate()) + "T" + z(d.getHours()) + ":" + z(d.getMinutes());
+  }
+
+  const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const instalada = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+
+  function soportaPush() {
+    return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  }
+
+  function claveAUint8(base64) {
+    const pad = "=".repeat((4 - (base64.length % 4)) % 4);
+    const b = atob((base64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
+    return Uint8Array.from(b, (c) => c.charCodeAt(0));
+  }
+
+  // Pide permiso (si hace falta) y registra este dispositivo para recibir notificaciones.
+  async function activarNotificaciones(pedirPermiso) {
+    if (!soportaPush()) {
+      throw new Error(esIOS && !instalada
+        ? "En iPhone las notificaciones solo funcionan con la app instalada: en Safari toca Compartir → Agregar a pantalla de inicio y ábrela desde ahí."
+        : "Este navegador no permite notificaciones.");
+    }
+    let permiso = Notification.permission;
+    if (permiso === "default" && pedirPermiso) permiso = await Notification.requestPermission();
+    if (permiso !== "granted") {
+      throw new Error("Las notificaciones están bloqueadas para esta app. Actívalas en los ajustes del navegador o del celular y vuelve a intentar.");
+    }
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: claveAUint8(cfg.vapidPublicKey) });
+    }
+    const j = sub.toJSON();
+    const { error } = await sb.rpc("guardar_suscripcion", { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth });
+    if (error) throw error;
+  }
+
+  // Si ya diste permiso antes, mantener registrado este dispositivo sin preguntar.
+  async function sincronizarNotificaciones() {
+    try { if (soportaPush() && Notification.permission === "granted") await activarNotificaciones(false); } catch (_) {}
+  }
+
+  async function abrirRecordatorio(p) {
+    const dlg = $("dlg-recordar");
+    const activo = !!p.recordar_en && !p.recordado;
+    $("rec-texto").textContent = p.texto;
+    const base = activo ? new Date(p.recordar_en) : new Date(Date.now() + 60 * 60 * 1000);
+    if (!activo) base.setMinutes(0, 0, 0), base.setHours(base.getHours() + (base < new Date(Date.now() + 30 * 60000) ? 1 : 0));
+    $("rec-cuando").value = aLocalInput(base);
+    $("rec-cuando").min = aLocalInput(new Date());
+    $("rec-quitar").hidden = !p.recordar_en;
+    $("rec-si").textContent = activo ? "Guardar" : "Activar";
+    const aviso = $("rec-aviso");
+    aviso.className = "msg";
+    aviso.textContent = esIOS && !instalada
+      ? "En iPhone, instala la app en la pantalla de inicio para recibir el aviso."
+      : "";
+    if (typeof dlg.showModal !== "function") return;
+    dlg.returnValue = "";
+    dlg.showModal();
+    const r = await new Promise((res) => dlg.addEventListener("close", () => res(dlg.returnValue), { once: true }));
+    if (r === "quitar") return guardarRecordatorio(p, null);
+    if (r !== "si") return;
+    const cuando = new Date($("rec-cuando").value);
+    if (isNaN(cuando)) return;
+    if (cuando <= new Date()) return avisar("Elige una fecha y hora en el futuro para el recordatorio.", true);
+    try {
+      await activarNotificaciones(true);
+    } catch (err) {
+      return avisar(err.message || traducirError(err), true);
+    }
+    guardarRecordatorio(p, cuando.toISOString());
+  }
+  $("dlg-recordar").addEventListener("click", (e) => { if (e.target === e.currentTarget) e.currentTarget.close("no"); });
+
+  async function guardarRecordatorio(p, iso) {
+    const antes = { recordar_en: p.recordar_en, recordado: p.recordado };
+    p.recordar_en = iso;
+    p.recordado = false;
+    pintar();
+    const { error } = await sb.from("pendientes").update({ recordar_en: iso, recordado: false }).eq("id", p.id);
+    if (error) { Object.assign(p, antes); pintar(); return avisar("No se pudo guardar el recordatorio. " + traducirError(error), true); }
+    avisar(iso ? "Te avisaremos " + cuandoRecordar(iso).toLowerCase() + "." : "Recordatorio quitado.");
+    setTimeout(() => { if ($("estado").textContent.startsWith(iso ? "Te avisaremos" : "Recordatorio quitado")) avisar(""); }, 4000);
   }
 
   // ---------- Instalable / offline ----------

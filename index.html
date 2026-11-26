@@ -13,7 +13,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Pendientes">
-  <link rel="stylesheet" href="style.css?v=8">
+  <link rel="stylesheet" href="style.css?v=9">
   <script>
     // Aplica el tema guardado antes de pintar, para que no parpadee.
     try { var t = localStorage.getItem("tema"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
@@ -130,8 +130,24 @@
     </form>
   </dialog>
 
+  <dialog id="dlg-recordar" class="dialogo" aria-labelledby="rec-titulo">
+    <form method="dialog">
+      <h2 id="rec-titulo">Recordatorio</h2>
+      <p id="rec-texto" class="rec-pendiente"></p>
+      <label class="rec-campo">¿Cuándo te aviso?
+        <input type="datetime-local" id="rec-cuando" required>
+      </label>
+      <p id="rec-aviso" class="msg"></p>
+      <div class="dialogo-botones">
+        <button value="quitar" class="link peligro rec-quitar" id="rec-quitar" formnovalidate>Quitar</button>
+        <button value="no" class="secundario" formnovalidate>Cancelar</button>
+        <button value="si" class="primary" id="rec-si">Activar</button>
+      </div>
+    </form>
+  </dialog>
+
   <script src="vendor/supabase.js"></script>
-  <script src="config.js?v=8"></script>
-  <script src="app.js?v=8"></script>
+  <script src="config.js?v=9"></script>
+  <script src="app.js?v=9"></script>
 </body>
 </html>
