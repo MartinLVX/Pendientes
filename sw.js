@@ -1,6 +1,6 @@
 // Guarda la app en el dispositivo para que abra rápido y sin conexión.
 // Cambia VERSION cuando publiques cambios para que los celulares los reciban.
-const VERSION = "pendientes-v3";
+const VERSION = "pendientes-v5";
 const ARCHIVOS = [
   "./",
   "index.html",

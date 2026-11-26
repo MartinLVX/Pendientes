@@ -16,6 +16,44 @@
   let pendientes = []; // { id, texto, hecho, urgencia, created_at }
   let filtro = 0; // 0 = todos, 1..3 = solo esa urgencia
   const NOMBRE_URG = { 1: "Baja", 2: "Media", 3: "Alta" };
+  const expandidos = new Set(); // ids de pendientes con la descripción abierta
+
+  // Minimizar la columna de Hechos (se recuerda en este dispositivo).
+  let hechosMin = false;
+  try { hechosMin = localStorage.getItem("hechosMin") === "1"; } catch (_) {}
+  function aplicarHechosMin() {
+    document.querySelector(".columnas").classList.toggle("hechos-min", hechosMin);
+    $("hechos-cuerpo").hidden = hechosMin;
+    $("min-hechos").setAttribute("aria-expanded", String(!hechosMin));
+    $("min-hechos-texto").textContent = hechosMin ? "Mostrar" : "Minimizar";
+  }
+  function alternarHechos() {
+    hechosMin = !hechosMin;
+    try { localStorage.setItem("hechosMin", hechosMin ? "1" : "0"); } catch (_) {}
+    aplicarHechosMin();
+  }
+  $("min-hechos").addEventListener("click", alternarHechos);
+  $("tab-hechos").addEventListener("click", alternarHechos);
+
+  // Tema claro / oscuro: sigue al sistema hasta que eliges uno; la elección se recuerda.
+  const raiz = document.documentElement;
+  const sistemaOscuro = window.matchMedia("(prefers-color-scheme: dark)");
+  function temaActual() { return raiz.dataset.theme || (sistemaOscuro.matches ? "dark" : "light"); }
+  function pintarTema() {
+    const t = temaActual();
+    raiz.dataset.temaActual = t;
+    $("tema").setAttribute("aria-label", t === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro");
+    document.querySelector('meta[name="theme-color"]').setAttribute("content", t === "dark" ? "#17110d" : "#f76707");
+  }
+  $("tema").addEventListener("click", () => {
+    const nuevo = temaActual() === "dark" ? "light" : "dark";
+    raiz.dataset.theme = nuevo;
+    try { localStorage.setItem("tema", nuevo); } catch (_) {}
+    pintarTema();
+  });
+  sistemaOscuro.addEventListener("change", pintarTema);
+  pintarTema();
+  aplicarHechosMin();
   let canal = null;
   let modoRegistro = false;
 
@@ -115,7 +153,7 @@
   async function cargar() {
     const { data, error } = await sb
       .from("pendientes")
-      .select("id, texto, hecho, urgencia, created_at")
+      .select("id, texto, descripcion, hecho, urgencia, created_at")
       .order("created_at", { ascending: false });
     if (error) return avisar("No se pudieron cargar los pendientes. " + traducirError(error), true);
     pendientes = data;
@@ -159,16 +197,20 @@
     const input = $("nuevo-texto");
     const texto = input.value.trim();
     if (!texto) return;
+    const descInput = $("nuevo-desc");
+    const descripcion = descInput.value.trim() || null;
     input.value = "";
+    descInput.value = "";
     const urgencia = Number(document.querySelector('input[name="urgencia"]:checked').value);
-    const temporal = { id: "tmp-" + Date.now(), texto, hecho: false, urgencia, created_at: new Date().toISOString() };
+    const temporal = { id: "tmp-" + Date.now(), texto, descripcion, hecho: false, urgencia, created_at: new Date().toISOString() };
     pendientes.unshift(temporal);
     pintar();
-    const { data, error } = await sb.from("pendientes").insert({ texto, urgencia }).select().single();
+    const { data, error } = await sb.from("pendientes").insert({ texto, descripcion, urgencia }).select().single();
     const i = pendientes.findIndex((x) => x.id === temporal.id);
     if (error) {
       if (i >= 0) pendientes.splice(i, 1);
       input.value = texto;
+      descInput.value = descripcion || "";
       avisar("No se pudo guardar. " + traducirError(error), true);
     } else {
       // Puede que el tiempo real ya lo haya agregado.
@@ -290,6 +332,29 @@
     meta.append(badge, fecha);
     cuerpo.append(span, meta);
 
+    if (p.descripcion) {
+      const abierto = expandidos.has(p.id);
+      const desc = document.createElement("p");
+      desc.className = "descripcion";
+      desc.id = "desc-" + p.id;
+      desc.textContent = p.descripcion;
+      desc.hidden = !abierto;
+      const ver = document.createElement("button");
+      ver.className = "ver-mas";
+      ver.textContent = abierto ? "Ver menos" : "Ver más";
+      ver.setAttribute("aria-expanded", String(abierto));
+      ver.setAttribute("aria-controls", desc.id);
+      ver.addEventListener("click", () => {
+        const ahora = !expandidos.has(p.id);
+        if (ahora) expandidos.add(p.id); else expandidos.delete(p.id);
+        desc.hidden = !ahora;
+        ver.textContent = ahora ? "Ver menos" : "Ver más";
+        ver.setAttribute("aria-expanded", String(ahora));
+      });
+      meta.append(ver);
+      cuerpo.append(desc);
+    }
+
     const del = document.createElement("button");
     del.className = "borrar";
     del.setAttribute("aria-label", "Borrar");
@@ -324,6 +389,7 @@
       ? "No hay pendientes de urgencia " + NOMBRE_URG[filtro].toLowerCase() + "."
       : "No tienes pendientes. ¡Bien hecho!";
     $("hechos-n").textContent = hechosVisibles.length;
+    $("tab-hechos-n").textContent = hechosVisibles.length;
     $("n-0").textContent = abiertos.length;
     [1, 2, 3].forEach((u) => ($("n-" + u).textContent = abiertos.filter((x) => (x.urgencia || 2) === u).length));
     const altas = abiertos.filter((x) => x.urgencia === 3).length;

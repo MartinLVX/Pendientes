@@ -20,7 +20,7 @@
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #17110d;
     --bg-2: #2a1a0f;
     --card: #221812;
@@ -41,6 +41,28 @@
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.25);
   }
 }
+:root[data-theme="dark"] {
+  --bg: #17110d;
+  --bg-2: #2a1a0f;
+  --card: #221812;
+  --text: #f6ebe2;
+  --muted: #b39a89;
+  --line: #3a2a1f;
+  --accent: #ff8a3d;
+  --accent-2: #ffa94d;
+  --accent-text: #1f1208;
+  --accent-soft: #3a2314;
+  --danger: #ff7b6b;
+  --u1: #f2b65a;
+  --u1-soft: #352813;
+  --u2: #ff8a3d;
+  --u2-soft: #3a2314;
+  --u3: #ff6b4f;
+  --u3-soft: #3f1c16;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body {
@@ -268,3 +290,85 @@ button:disabled { opacity: 0.5; cursor: default; }
   .filtro { padding: 6px 9px; gap: 4px; }
   .filtro b { padding: 0 5px; min-width: 18px; }
 }
+
+/* Descripción */
+#nuevo-desc {
+  font: inherit; font-size: 0.95rem;
+  color: var(--text); background: var(--bg);
+  border: 1.5px solid var(--line); border-radius: 12px;
+  padding: 10px 14px; width: 100%; min-width: 0;
+  resize: vertical; min-height: 44px;
+  transition: border-color .15s, box-shadow .15s;
+}
+#nuevo-desc:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); }
+.ver-mas {
+  background: none; border: 0; padding: 2px 2px;
+  color: var(--accent); font-size: 0.78rem; font-weight: 600;
+  margin-left: auto;
+}
+.ver-mas:hover { text-decoration: underline; }
+.descripcion {
+  margin: 6px 0 2px;
+  padding: 8px 10px;
+  font-size: 0.92rem;
+  color: var(--text);
+  background: var(--accent-soft);
+  border-radius: 10px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.item.hecho .descripcion { color: var(--muted); }
+
+/* Minimizar Hechos */
+.col-acciones { display: flex; align-items: center; gap: 6px; }
+.minimizar {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: transparent; border: 1.5px solid var(--line);
+  color: var(--muted); border-radius: 999px;
+  padding: 4px 8px 4px 10px; font-size: 0.82rem; font-weight: 500;
+}
+.minimizar svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s; }
+.minimizar[aria-expanded="false"] svg { transform: rotate(180deg); }
+.minimizar:hover { color: var(--text); border-color: var(--muted); }
+.hechos-min #borrar-hechos { display: none; }
+/* Con descripción abierta, casilla y botón de borrar quedan arriba */
+.item { align-items: flex-start; }
+.item .check { margin-top: 1px; }
+.item .borrar { margin-top: -6px; }
+.ver-mas { margin-left: 2px; }
+
+/* Botón de tema */
+.top-acciones { display: flex; align-items: center; gap: 8px; }
+.tema {
+  width: 40px; height: 40px; border-radius: 12px;
+  display: grid; place-content: center;
+  background: var(--card); border: 1px solid var(--line); color: var(--accent);
+  box-shadow: var(--shadow);
+}
+.tema svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.tema .luna { display: none; }
+:root[data-tema-actual="dark"] .tema .sol { display: none; }
+:root[data-tema-actual="dark"] .tema .luna { display: block; }
+
+/* Hechos como pestaña lateral (pantallas anchas) */
+.tab-hechos { display: none; }
+@media (min-width: 760px) {
+  .columnas { transition: grid-template-columns .25s ease; }
+  .columnas.hechos-min { grid-template-columns: 1fr 52px; }
+  .hechos-min .col-hechos { padding: 0; border: 0; background: none; position: sticky; top: 16px; }
+  .hechos-min .col-hechos > .col-head { display: none; }
+  .hechos-min .tab-hechos {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    width: 52px; padding: 14px 0;
+    background: var(--card); color: var(--text);
+    border: 1px solid var(--line); border-left: 4px solid var(--accent);
+    border-radius: 14px; box-shadow: var(--shadow);
+    font-weight: 600; font-size: 0.95rem;
+  }
+  .tab-hechos:hover { border-color: var(--accent); }
+  .tab-hechos .vertical { writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 0.02em; }
+  .tab-hechos .cuenta { writing-mode: horizontal-tb; }
+  .tab-hechos svg { width: 18px; height: 18px; stroke: var(--accent); stroke-width: 2.4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .minimizar svg { transform: rotate(90deg); }
+}
+@media (prefers-reduced-motion: reduce) { .columnas { transition: none; } }
