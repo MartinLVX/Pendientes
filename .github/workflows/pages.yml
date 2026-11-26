@@ -15,16 +15,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  publicar:
+  # Dos trabajos separados, como en la plantilla oficial de GitHub Pages:
+  # así el paquete ya está registrado cuando el segundo trabajo lo publica.
+  preparar:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
+
+  publicar:
+    needs: preparar
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
       - id: deploy
         uses: actions/deploy-pages@v4
