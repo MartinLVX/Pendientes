@@ -54,6 +54,7 @@
             <span>Agregar</span>
           </button>
         </div>
+        <textarea id="nuevo-desc" rows="2" maxlength="2000" placeholder="Descripción (opcional): más detalle sobre este pendiente"></textarea>
         <div class="urgencias" role="radiogroup" aria-label="Urgencia">
           <span class="urg-label">Urgencia</span>
           <label class="chip u1"><input type="radio" name="urgencia" value="1"><span>Baja</span></label>
@@ -83,13 +84,21 @@
           </div>
         </section>
 
-        <section class="columna col-hechos" aria-labelledby="t-hechos">
+        <section class="columna col-hechos" id="col-hechos" aria-labelledby="t-hechos">
           <header class="col-head">
             <h2 id="t-hechos">Hechos <span class="cuenta" id="hechos-n">0</span></h2>
-            <button id="borrar-hechos" class="link peligro" hidden>Borrar hechos</button>
+            <div class="col-acciones">
+              <button id="borrar-hechos" class="link peligro" hidden>Borrar hechos</button>
+              <button id="min-hechos" class="minimizar" aria-expanded="true" aria-controls="hechos-cuerpo">
+                <span id="min-hechos-texto">Minimizar</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+              </button>
+            </div>
           </header>
-          <ul id="lista-hechos" class="lista"></ul>
-          <p id="hechos-vacio" class="vacio-chico">Lo que marques como hecho aparecerá aquí.</p>
+          <div id="hechos-cuerpo">
+            <ul id="lista-hechos" class="lista"></ul>
+            <p id="hechos-vacio" class="vacio-chico">Lo que marques como hecho aparecerá aquí.</p>
+          </div>
         </section>
       </div>
     </section>

@@ -16,6 +16,23 @@
   let pendientes = []; // { id, texto, hecho, urgencia, created_at }
   let filtro = 0; // 0 = todos, 1..3 = solo esa urgencia
   const NOMBRE_URG = { 1: "Baja", 2: "Media", 3: "Alta" };
+  const expandidos = new Set(); // ids de pendientes con la descripción abierta
+
+  // Minimizar la columna de Hechos (se recuerda en este dispositivo).
+  let hechosMin = false;
+  try { hechosMin = localStorage.getItem("hechosMin") === "1"; } catch (_) {}
+  function aplicarHechosMin() {
+    document.querySelector(".columnas").classList.toggle("hechos-min", hechosMin);
+    $("hechos-cuerpo").hidden = hechosMin;
+    $("min-hechos").setAttribute("aria-expanded", String(!hechosMin));
+    $("min-hechos-texto").textContent = hechosMin ? "Mostrar" : "Minimizar";
+  }
+  $("min-hechos").addEventListener("click", () => {
+    hechosMin = !hechosMin;
+    try { localStorage.setItem("hechosMin", hechosMin ? "1" : "0"); } catch (_) {}
+    aplicarHechosMin();
+  });
+  aplicarHechosMin();
   let canal = null;
   let modoRegistro = false;
 
@@ -115,7 +132,7 @@
   async function cargar() {
     const { data, error } = await sb
       .from("pendientes")
-      .select("id, texto, hecho, urgencia, created_at")
+      .select("id, texto, descripcion, hecho, urgencia, created_at")
       .order("created_at", { ascending: false });
     if (error) return avisar("No se pudieron cargar los pendientes. " + traducirError(error), true);
     pendientes = data;
@@ -159,16 +176,20 @@
     const input = $("nuevo-texto");
     const texto = input.value.trim();
     if (!texto) return;
+    const descInput = $("nuevo-desc");
+    const descripcion = descInput.value.trim() || null;
     input.value = "";
+    descInput.value = "";
     const urgencia = Number(document.querySelector('input[name="urgencia"]:checked').value);
-    const temporal = { id: "tmp-" + Date.now(), texto, hecho: false, urgencia, created_at: new Date().toISOString() };
+    const temporal = { id: "tmp-" + Date.now(), texto, descripcion, hecho: false, urgencia, created_at: new Date().toISOString() };
     pendientes.unshift(temporal);
     pintar();
-    const { data, error } = await sb.from("pendientes").insert({ texto, urgencia }).select().single();
+    const { data, error } = await sb.from("pendientes").insert({ texto, descripcion, urgencia }).select().single();
     const i = pendientes.findIndex((x) => x.id === temporal.id);
     if (error) {
       if (i >= 0) pendientes.splice(i, 1);
       input.value = texto;
+      descInput.value = descripcion || "";
       avisar("No se pudo guardar. " + traducirError(error), true);
     } else {
       // Puede que el tiempo real ya lo haya agregado.
@@ -289,6 +310,29 @@
     fecha.textContent = cuando(p.created_at);
     meta.append(badge, fecha);
     cuerpo.append(span, meta);
+
+    if (p.descripcion) {
+      const abierto = expandidos.has(p.id);
+      const desc = document.createElement("p");
+      desc.className = "descripcion";
+      desc.id = "desc-" + p.id;
+      desc.textContent = p.descripcion;
+      desc.hidden = !abierto;
+      const ver = document.createElement("button");
+      ver.className = "ver-mas";
+      ver.textContent = abierto ? "Ver menos" : "Ver más";
+      ver.setAttribute("aria-expanded", String(abierto));
+      ver.setAttribute("aria-controls", desc.id);
+      ver.addEventListener("click", () => {
+        const ahora = !expandidos.has(p.id);
+        if (ahora) expandidos.add(p.id); else expandidos.delete(p.id);
+        desc.hidden = !ahora;
+        ver.textContent = ahora ? "Ver menos" : "Ver más";
+        ver.setAttribute("aria-expanded", String(ahora));
+      });
+      meta.append(ver);
+      cuerpo.append(desc);
+    }
 
     const del = document.createElement("button");
     del.className = "borrar";

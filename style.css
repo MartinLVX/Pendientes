@@ -268,3 +268,52 @@ button:disabled { opacity: 0.5; cursor: default; }
   .filtro { padding: 6px 9px; gap: 4px; }
   .filtro b { padding: 0 5px; min-width: 18px; }
 }
+
+/* Descripción */
+#nuevo-desc {
+  font: inherit; font-size: 0.95rem;
+  color: var(--text); background: var(--bg);
+  border: 1.5px solid var(--line); border-radius: 12px;
+  padding: 10px 14px; width: 100%; min-width: 0;
+  resize: vertical; min-height: 44px;
+  transition: border-color .15s, box-shadow .15s;
+}
+#nuevo-desc:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); }
+.ver-mas {
+  background: none; border: 0; padding: 2px 2px;
+  color: var(--accent); font-size: 0.78rem; font-weight: 600;
+  margin-left: auto;
+}
+.ver-mas:hover { text-decoration: underline; }
+.descripcion {
+  margin: 6px 0 2px;
+  padding: 8px 10px;
+  font-size: 0.92rem;
+  color: var(--text);
+  background: var(--accent-soft);
+  border-radius: 10px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.item.hecho .descripcion { color: var(--muted); }
+
+/* Minimizar Hechos */
+.col-acciones { display: flex; align-items: center; gap: 6px; }
+.minimizar {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: transparent; border: 1.5px solid var(--line);
+  color: var(--muted); border-radius: 999px;
+  padding: 4px 8px 4px 10px; font-size: 0.82rem; font-weight: 500;
+}
+.minimizar svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s; }
+.minimizar[aria-expanded="false"] svg { transform: rotate(180deg); }
+.minimizar:hover { color: var(--text); border-color: var(--muted); }
+.hechos-min #borrar-hechos { display: none; }
+@media (min-width: 760px) {
+  .columnas.hechos-min { grid-template-columns: 1fr minmax(190px, 240px); }
+}
+/* Con descripción abierta, casilla y botón de borrar quedan arriba */
+.item { align-items: flex-start; }
+.item .check { margin-top: 1px; }
+.item .borrar { margin-top: -6px; }
+.ver-mas { margin-left: 2px; }
